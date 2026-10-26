@@ -1,0 +1,49 @@
+/* Global base styles for the Tauri + SvelteKit frontend.
+ *
+ * Keep this minimal and stable:
+ * - clear UA defaults
+ * - provide consistent sizing/box model
+ * - preserve component-local styling decisions
+ */
+
+/* 全局字体族：显式声明中文优先的字体栈。
+ *
+ * 之前只有 .workspace 声明了 font-family（"Segoe UI", "Microsoft YaHei", sans-serif），
+ * 依赖 CSS 继承。继承链一旦被任何中间层打断（或者某个元素走了浏览器 UA 字体），
+ * 中文就会退回系统默认的宋体。这里把字体栈提升为变量并在 :root 上落地，
+ * 让所有组件都能显式引用，不再依赖隐式继承。
+ *
+ * 注意：中文族名放在西文之前，避免"Segoe UI 无中文字形"时依赖浏览器回退选择。
+ * 同时保留 "微软雅黑" 本地化族名，兼容只按本地化名匹配字体的环境。
+ */
+:root {
+  --ws-font-ui: "Microsoft YaHei", "Microsoft YaHei UI", "微软雅黑", "PingFang SC",
+    "Hiragino Sans GB", "Segoe UI", system-ui, sans-serif;
+  --ws-font-mono: "Cascadia Mono", "Consolas", "Microsoft YaHei UI", "微软雅黑", ui-monospace,
+    monospace;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: transparent;
+  font-family: var(--ws-font-ui);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}

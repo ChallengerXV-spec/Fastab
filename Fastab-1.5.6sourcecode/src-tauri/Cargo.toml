@@ -1,0 +1,48 @@
+[package]
+name = "fastab"
+version = "1.5.6"
+description = "Fastab - a lightweight desktop notes app (derived from desk_tidy_sticky)."
+authors = ["Fastab Contributors"]
+license = "MIT"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "fastab_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["macos-private-api", "protocol-asset", "tray-icon", "image-ico", "image-png"] }
+tauri-plugin-opener = "2"
+tauri-plugin-store = "2"
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-autostart = "2"
+tauri-plugin-single-instance = "2"
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4", "serde"] }
+directories = "5"
+chrono = { version = "0.4", features = ["serde"] }
+open = "5.3.3"
+base64 = "0.22"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = { version = "0.58.0", features = ["Win32_Foundation", "Win32_Graphics_Gdi", "Win32_UI_WindowsAndMessaging"] }
+# 关闭 WebView2 的浏览器加速键（Ctrl+F 原生查找条等），见 lib.rs 里 setup 中的 with_webview
+webview2-com = "0.38"
+windows-core = "0.61"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6.3"
+objc2-app-kit = "0.3.2"
+objc2-core-graphics = "0.3.2"
+objc2-foundation = "0.3.2"
+

@@ -1,0 +1,245 @@
+use crate::notes::{assets as note_assets, service as notes_service, Note, NoteSortMode};
+use tauri::{Emitter, Manager};
+
+fn emit_notes_changed(app: &tauri::AppHandle) {
+    let _ = app.emit("notes_changed", ());
+}
+
+fn parse_sort_mode(_sort_mode: &str) -> NoteSortMode {
+    // 1.2.0 起只支持手动排序，前端仍会传参，这里统一忽略。
+    NoteSortMode::Custom
+}
+
+#[tauri::command]
+pub fn load_notes(sort_mode: String) -> Result<Vec<Note>, String> {
+    notes_service::load_notes(parse_sort_mode(sort_mode.as_str()))
+}
+
+#[tauri::command]
+pub fn add_note(
+    app: tauri::AppHandle,
+    text: String,
+    is_pinned: bool,
+    sort_mode: String,
+) -> Result<Vec<Note>, String> {
+    let notes = notes_service::add_note(text, is_pinned, parse_sort_mode(sort_mode.as_str()))?;
+    emit_notes_changed(&app);
+    Ok(notes)
+}
+
+#[tauri::command]
+pub fn update_note(
+    app: tauri::AppHandle,
+    note: Note,
+    sort_mode: String,
+) -> Result<Vec<Note>, String> {
+    let notes = notes_service::update_note(note, parse_sort_mode(sort_mode.as_str()))?;
+    emit_notes_changed(&app);
+    Ok(notes)
+}
+
+#[tauri::command]
+pub fn update_note_position(
+    app: tauri::AppHandle,
+    id: String,
+    x: f64,
+    y: f64,
+    emit_event: Option<bool>,
+) -> Result<(), String> {
+    notes_service::update_note_position(&id, x, y)?;
+    if emit_event.unwrap_or(true) {
+        emit_notes_changed(&app);
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn update_note_size(
+    app: tauri::AppHandle,
+    id: String,
+    width: f64,
+    height: f64,
+    emit_event: Option<bool>,
+) -> Result<(), String> {
+    notes_service::update_note_size(&id, width, height)?;
+    if emit_event.unwrap_or(true) {
+        emit_notes_changed(&app);
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn persist_note_window_size(
+    app: tauri::AppHandle,
+    id: String,
+    emit_event: Option<bool>,
+) -> Result<(), String> {
+    let label = format!("note-{}", id);
+    let Some(window) = app.get_webview_window(label.as_str()) else {
+        return Ok(());
+    };
+    let size = window.inner_size().map_err(|e| e.to_string())?;
+    let raw_scale = window.scale_factor().map_err(|e| e.to_string())?;
+    let scale = if raw_scale.is_finite() && raw_scale > 0.0 {
+        raw_scale
+    } else {
+        1.0
+    };
+    let width = (size.width as f64 / scale).max(220.0);
+    let height = (size.height as f64 / scale).max(220.0);
+    notes_service::update_note_size(&id, width, height)?;
+    if emit_event.unwrap_or(true) {
+        emit_notes_changed(&app);
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn update_note_text(
+    app: tauri::AppHandle,
+    id: String,
+    text: String,
+    sort_mode: String,
+) -> Result<Vec<Note>, String> {
+    let notes = notes_service::update_note_text(&id, text, parse_sort_mode(sort_mode.as_str()))?;
+    emit_notes_changed(&app);
+    Ok(notes)
+}
+
+#[tauri::command]
+pub fn save_clipboard_image(
+    note_id: String,
+    mime_type: String,
+    data_base64: String,
+) -> Result<String, String> {
+    note_assets::save_clipboard_image(&note_id, &mime_type, &data_base64)
+}
+
+#[tauri::command]
+pub fn update_note_color(
+    app: tauri::AppHandle,
+    id: String,
+    color: String,
+    sort_mode: String,
+) -> Result<Vec<Note>, String> {
+    let notes = notes_service::update_note_color(&id, color, parse_sort_mode(sort_mode.as_str()))?;
+    emit_notes_changed(&app);
+    Ok(notes)
+}
+
+#[tauri::command]
+pub fn update_note_text_color(
+    app: tauri::AppHandle,
+    id: String,
+    color: String,
+    sort_mode: String,
+) -> Result<Vec<Note>, String> {
+    let notes =
+        notes_service::update_note_text_color(&id, color, parse_sort_mode(sort_mode.as_str()))?;
+    emit_notes_changed(&app);
+    Ok(notes)
+}
+
+#[tauri::command]
+pub fn update_note_opacity(
+    app: tauri::AppHandle,
+    id: String,
+    opacity: f64,
+    sort_mode: String,
+    emit_event: Option<bool>,
+) -> Result<Vec<Note>, String> {
+    let notes =
+        notes_service::update_note_opacity(&id, opacity, parse_sort_mode(sort_mode.as_str()))?;
+    if emit_event.unwrap_or(true) {
+        emit_notes_changed(&app);
+    }
+    Ok(notes)
+}
+
+#[tauri::command]
+pub fn update_note_title(
+    app: tauri::AppHandle,
+    id: String,
+    title: String,
+    sort_mode: String,
+) -> Result<Vec<Note>, String> {
+    let notes = notes_service::update_note_title(&id, title, parse_sort_mode(sort_mode.as_str()))?;
+    emit_notes_changed(&app);
+    Ok(notes)
+}
+
+#[tauri::command]
+pub fn toggle_pin(
+    app: tauri::AppHandle,
+    id: String,
+    sort_mode: String,
+) -> Result<Vec<Note>, String> {
+    let notes = notes_service::toggle_pin(&id, parse_sort_mode(sort_mode.as_str()))?;
+    emit_notes_changed(&app);
+    Ok(notes)
+}
+
+#[tauri::command]
+pub fn toggle_archive(
+    app: tauri::AppHandle,
+    id: String,
+    sort_mode: String,
+) -> Result<Vec<Note>, String> {
+    let notes = notes_service::toggle_archive(&id, parse_sort_mode(sort_mode.as_str()))?;
+    emit_notes_changed(&app);
+    Ok(notes)
+}
+
+#[tauri::command]
+pub fn delete_note(
+    app: tauri::AppHandle,
+    id: String,
+    sort_mode: String,
+) -> Result<Vec<Note>, String> {
+    let notes = notes_service::delete_note(&id, parse_sort_mode(sort_mode.as_str()))?;
+    emit_notes_changed(&app);
+    Ok(notes)
+}
+
+#[tauri::command]
+pub fn restore_note(
+    app: tauri::AppHandle,
+    id: String,
+    sort_mode: String,
+) -> Result<Vec<Note>, String> {
+    let notes = notes_service::restore_note(&id, parse_sort_mode(sort_mode.as_str()))?;
+    emit_notes_changed(&app);
+    Ok(notes)
+}
+
+#[tauri::command]
+pub fn permanently_delete_note(app: tauri::AppHandle, id: String) -> Result<(), String> {
+    notes_service::permanently_delete_note(&id)?;
+    emit_notes_changed(&app);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn empty_trash(app: tauri::AppHandle) -> Result<(), String> {
+    notes_service::empty_trash()?;
+    emit_notes_changed(&app);
+    Ok(())
+}
+
+#[derive(serde::Deserialize)]
+pub struct ReorderItem {
+    id: String,
+    order: i32,
+}
+
+#[tauri::command]
+pub fn reorder_notes(
+    app: tauri::AppHandle,
+    reordered: Vec<ReorderItem>,
+    is_archived_view: bool,
+) -> Result<(), String> {
+    let items: Vec<(String, i32)> = reordered.into_iter().map(|r| (r.id, r.order)).collect();
+    notes_service::reorder_notes(items, is_archived_view)?;
+    emit_notes_changed(&app);
+    Ok(())
+}
